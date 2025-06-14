@@ -1,35 +1,73 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+import { useEffect, useState } from "react";
+import "./App.css";
+import PokemonCard from "./componentes/PokemonCard";
+import NavBar from "./componentes/NavBar";
+interface Pokemon {
+  id: number;
+  name: string;
+  height: number;
+  weight: number;
+  types: { type: { name: string } }[];
+  sprites: {
+    other: {
+      "official-artwork": {
+        front_default: string;
+      };
+    };
+  };
 }
 
-export default App
+function App() {
+  const [pokemones, setPokemones] = useState<Pokemon[]>([]);
+  const [filtro, setFiltro] = useState("ver-todos");
+
+  const tipos = [
+    "normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison",
+    "ground", "flying", "psychic", "bug", "rock", "ghost", "dark", "dragon", "steel", "fairy"
+  ];
+
+  useEffect(() => {
+    const obtenerPokemones = async () => {
+      const promesas = [];
+      for (let i = 1; i <= 151; i++) {
+        promesas.push(fetch(`https://pokeapi.co/api/v2/pokemon/${i}`).then(res => res.json()));
+      }
+      const resultados = await Promise.all(promesas);
+      setPokemones(resultados);
+    };
+
+    obtenerPokemones();
+  }, []);
+
+  const pokemonesFiltrados = filtro === "ver-todos"
+    ? pokemones
+    : pokemones.filter(p => p.types.some(t => t.type.name === filtro));
+
+  return (
+    <div>
+      <NavBar
+        tipos={tipos}
+        filtroActual={filtro}
+        onFiltroSeleccionado={setFiltro}
+      />
+
+      <main>
+        <div className="pokemon-todos">
+          {pokemonesFiltrados.map((pokemon) => (
+            <PokemonCard
+              key={pokemon.id}
+              id={pokemon.id}
+              name={pokemon.name}
+              height={pokemon.height}
+              weight={pokemon.weight}
+              types={pokemon.types}
+              image={pokemon.sprites.other["official-artwork"].front_default}
+            />
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;
